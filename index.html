@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clocky - Penjejak Masa</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-light: #f0f4f8; --card-light: #ffffff;
+            --gov-blue: #1a5276; --gov-accent: #2980b9; --border-light: #d1d9e6;
+        }
+        body {
+            font-family: 'Poppins', sans-serif; background-color: var(--bg-light);
+            display: flex; flex-direction: column; align-items: center;
+            padding: 40px 20px; margin: 0;
+        }
+        .card {
+            background: var(--card-light); padding: 30px; border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 500px;
+            margin-bottom: 20px; box-sizing: border-box; text-align: center;
+        }
+        .dashboard-card { background: #e8f4f8; border-left: 4px solid var(--gov-accent); padding: 20px; }
+        h2, h3 { color: var(--gov-blue); margin-top: 0; }
+        input, select {
+            width: 100%; padding: 10px; margin-bottom: 10px; 
+            border-radius: 5px; border: 1px solid #ccc; font-family: 'Poppins', sans-serif; box-sizing: border-box;
+        }
+        .timer-display { font-size: 48px; font-weight: 700; color: #2c3e50; margin: 20px 0; font-family: monospace; }
+        button {
+            font-family: 'Poppins', sans-serif; padding: 10px 20px; border: none; border-radius: 5px; 
+            cursor: pointer; color: white; font-weight: 600; font-size: 14px; transition: 0.3s; margin: 5px;
+        }
+        .btn-start { background-color: #27ae60; }
+        .btn-stop { background-color: #e74c3c; display: none; }
+        .btn-primary { background-color: var(--gov-blue); width: 100%; margin: 5px 0;}
+        .btn-outline { background-color: transparent; color: var(--gov-blue); border: 1px solid var(--gov-blue); width: 100%; margin: 5px 0;}
+        .btn-tab { flex: 1; padding: 8px; font-size: 13px; border-radius: 5px; border: 1px solid var(--gov-blue); background: transparent; color: var(--gov-blue); cursor: pointer;}
+        .btn-tab.active { background: var(--gov-blue); color: white; }
+        .btn-logout { background-color: #7f8c8d; font-size: 12px; padding: 5px 10px; margin: 0;}
+        .btn-export { background-color: #27ae60; font-size: 12px; padding: 5px 10px; margin: 0;}
+        button:hover { opacity: 0.9; }
+
+.history-item {
+            display: flex; flex-direction: column; align-items: flex-start; padding: 12px 0;
+            border-bottom: 1px solid var(--border-light); font-size: 14px;
+        }
+        .task-name { font-weight: 600; color: #2c3e50; }
+        .task-duration { color: #7f8c8d; font-family: monospace; font-size: 15px;}
+        .project-tag { font-size: 11px; color: #fff; background: var(--gov-blue); padding: 2px 8px; border-radius: 12px; margin-top: 5px;}
+
+#appContainer { display: none; }
+        #authContainer { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="card" id="authContainer">
+        <h2>Log Masuk Clocky</h2>
+        <input type="email" id="emailInput" placeholder="E-mel">
+        <input type="password" id="passwordInput" placeholder="Kata Laluan">
+        <button class="btn-primary" onclick="login()">Log Masuk</button>
+        <button class="btn-outline" onclick="register()">Daftar Akaun Baharu</button>
+    </div>
+
+<div id="appContainer" style="width: 100%; max-width: 500px;">
+        <!-- Panel Pemasa / Manual -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin:0;">Clocky Tracker</h2>
+                <button class="btn-logout" onclick="logout()">Log Keluar</button>
+            </div>
+
+<div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <button class="btn-tab active" id="tabTimer" onclick="setMode('timer')">Pemasa</button>
+                <button class="btn-tab" id="tabManual" onclick="setMode('manual')">Manual</button>
+            </div>
+
+<div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <select id="projectSelect" style="flex: 1; margin: 0;"><option value="">-- Tiada Projek --</option></select>
+                <button class="btn-outline" onclick="addProject()" style="width: auto; margin: 0; padding: 0 15px;">+ Projek</button>
+            </div>
+            <input type="text" id="taskDesc" placeholder="Apa yang sedang anda buat?">
+
+<div id="modeTimer">
+                <div class="timer-display" id="display">00:00:00</div>
+                <button class="btn-start" id="btnStart" onclick="startTimer()">Mula</button>
+                <button class="btn-stop" id="btnStop" onclick="stopTimer()">Henti</button>
+            </div>
+
+<div id="modeManual" style="display: none; text-align: left; background: #f9f9f9; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                <label style="font-size: 12px; color: #555;">Tarikh:</label>
+                <input type="date" id="manualDate">
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;"><label style="font-size: 12px; color: #555;">Mula:</label><input type="time" id="manualStart"></div>
+                    <div style="flex: 1;"><label style="font-size: 12px; color: #555;">Tamat:</label><input type="time" id="manualEnd"></div>
+                </div>
+                <button class="btn-primary" onclick="saveManualTime()">Simpan Rekod Manual</button>
+            </div>
+        </div>
+
+<!-- Dashboard Ringkasan & Kewangan -->
+        <div class="card dashboard-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">Ringkasan Prestasi</h3>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <label style="font-size: 12px; color: #555;">Kadar/Jam:</label>
+                    <input type="number" id="hourlyRate" placeholder="RM" style="width: 70px; margin: 0; padding: 5px;" value="0" onchange="calculateEarnings()">
+                </div>
+            </div>
+
+<div style="display: flex; justify-content: space-between; text-align: left; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 10px;">
+                <div>
+                    <div style="font-size: 13px; color: #7f8c8d;">Masa Hari Ini</div>
+                    <div id="todayTotal" style="font-size: 20px; font-weight: bold; color: var(--gov-blue);">00:00:00</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 13px; color: #7f8c8d;">Keseluruhan Jam</div>
+                    <div id="allTimeTotal" style="font-size: 20px; font-weight: bold; color: var(--gov-blue);">00:00:00</div>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 13px; color: #7f8c8d;">Anggaran Pendapatan</div>
+                <div id="totalEarnings" style="font-size: 24px; font-weight: bold; color: #27ae60;">RM 0.00</div>
+            </div>
+        </div>
+
+<!-- Senarai Rekod -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">Rekod Tugasan</h3>
+                <button class="btn-export" onclick="exportToCSV()">Muat Turun (CSV)</button>
+            </div>
+            <div id="historyList">Memuatkan data...</div>
+        </div>
+    </div>
+
+<script>
+        const SUPABASE_URL = 'https://bigvbcrhymoihvogkglb.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_BHsWAvLJy93iA2NQZ4Am-g_MVRJtXnj';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let startTime, timerInterval;
+        let totalSecondsAllTime = 0; // Untuk simpan jumlah jam keseluruhan bagi kiraan duit
+
+        window.onload = async () => {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) { currentUser = session.user; showApp(); }
+            document.getElementById('manualDate').value = new Date().toISOString().split('T')[0];
+            
+            // Tarik kadar jam dari simpanan pelayar (jika ada)
+            const savedRate = localStorage.getItem('hourlyRate');
+            if(savedRate) document.getElementById('hourlyRate').value = savedRate;
+        };
+
+        // --- AUTH ---
+        async function register() {
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            if(!email || !password) return alert("Sila masukkan e-mel dan kata laluan.");
+            const { error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) alert("Ralat: " + error.message); else alert("Pendaftaran berjaya! Sila klik Log Masuk.");
+        }
+
+        async function login() {
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) alert("Gagal log masuk: " + error.message); else { currentUser = data.user; showApp(); }
+        }
+
+        async function logout() {
+            await supabaseClient.auth.signOut(); currentUser = null;
+            document.getElementById('authContainer').style.display = 'block';
+            document.getElementById('appContainer').style.display = 'none';
+        }
+
+        function showApp() {
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+            fetchProjects(); fetchHistory(); loadDashboard();
+        }
+
+        function setMode(mode) {
+            document.getElementById('modeTimer').style.display = mode === 'timer' ? 'block' : 'none';
+            document.getElementById('modeManual').style.display = mode === 'manual' ? 'block' : 'none';
+            document.getElementById('tabTimer').classList.toggle('active', mode === 'timer');
+            document.getElementById('tabManual').classList.toggle('active', mode === 'manual');
+        }
+
+        // --- PROJEK ---
+        async function fetchProjects() {
+            const { data } = await supabaseClient.from('projects').select('*').order('created_at', { ascending: false });
+            if (!data) return;
+            const select = document.getElementById('projectSelect');
+            select.innerHTML = '<option value="">-- Tiada Projek --</option>';
+            data.forEach(p => select.innerHTML += `<option value="${p.id}">${p.name}</option>`);
+        }
+
+        async function addProject() {
+            const projectName = prompt("Sila masukkan nama projek/klien baharu:");
+            if (!projectName) return;
+            const { error } = await supabaseClient.from('projects').insert([{ name: projectName }]);
+            if (!error) fetchProjects(); 
+        }
+
+        // --- MASA ---
+        function updateDisplay() {
+            const diff = Math.floor((new Date() - startTime) / 1000);
+            const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+            const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+            const s = String(diff % 60).padStart(2, '0');
+            document.getElementById('display').innerText = `${h}:${m}:${s}`;
+        }
+
+        function startTimer() {
+            startTime = new Date(); timerInterval = setInterval(updateDisplay, 1000);
+            document.getElementById('btnStart').style.display = 'none';
+            document.getElementById('btnStop').style.display = 'inline-block';
+            document.getElementById('taskDesc').disabled = true; document.getElementById('projectSelect').disabled = true;
+        }
+
+        async function stopTimer() {
+            clearInterval(timerInterval);
+            const durationSeconds = Math.floor((new Date() - startTime) / 1000);
+            saveToDatabase(startTime.toISOString(), new Date().toISOString(), durationSeconds);
+            document.getElementById('btnStart').style.display = 'inline-block';
+            document.getElementById('btnStop').style.display = 'none';
+            document.getElementById('taskDesc').disabled = false; document.getElementById('projectSelect').disabled = false;
+            document.getElementById('display').innerText = '00:00:00';
+        }
+
+        async function saveManualTime() {
+            const dateVal = document.getElementById('manualDate').value;
+            const startVal = document.getElementById('manualStart').value;
+            const endVal = document.getElementById('manualEnd').value;
+            if (!dateVal || !startVal || !endVal) return alert("Sila lengkapkan maklumat.");
+            const sTime = new Date(`${dateVal}T${startVal}:00`);
+            const eTime = new Date(`${dateVal}T${endVal}:00`);
+            const durationSeconds = Math.floor((eTime - sTime) / 1000);
+            if (durationSeconds <= 0) return alert("Masa tamat mesti lebih lewat.");
+            saveToDatabase(sTime.toISOString(), eTime.toISOString(), durationSeconds);
+        }
+
+        async function saveToDatabase(startIso, endIso, durationSecs) {
+            const payload = { 
+                user_id: currentUser.id, 
+                description: document.getElementById('taskDesc').value || 'Tiada tajuk', 
+                start_time: startIso, end_time: endIso, duration_seconds: durationSecs
+            };
+            const pId = document.getElementById('projectSelect').value;
+            if (pId) payload.project_id = pId;
+            const { error } = await supabaseClient.from('time_entries').insert([payload]);
+            if (!error) { document.getElementById('taskDesc').value = ''; fetchHistory(); loadDashboard(); } 
+            else alert("Ralat simpan data: " + error.message);
+        }
+
+        // --- DASHBOARD & SEJARAH ---
+        async function loadDashboard() {
+            if (!currentUser) return;
+            const { data } = await supabaseClient.from('time_entries').select('duration_seconds, start_time').eq('user_id', currentUser.id);
+            if (!data) return;
+
+            let totalSecondsToday = 0; totalSecondsAllTime = 0;
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            data.forEach(entry => {
+                totalSecondsAllTime += entry.duration_seconds;
+                if (entry.start_time.split('T')[0] === todayStr) totalSecondsToday += entry.duration_seconds;
+            });
+
+            const format = (sec) => `${String(Math.floor(sec/3600)).padStart(2,'0')}:${String(Math.floor((sec%3600)/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
+            document.getElementById('allTimeTotal').innerText = format(totalSecondsAllTime);
+            document.getElementById('todayTotal').innerText = format(totalSecondsToday);
+            calculateEarnings();
+        }
+
+        function calculateEarnings() {
+            const rate = parseFloat(document.getElementById('hourlyRate').value) || 0;
+            localStorage.setItem('hourlyRate', rate); // Simpan dalam pelayar
+            const totalHours = totalSecondsAllTime / 3600;
+            const earnings = totalHours * rate;
+            document.getElementById('totalEarnings').innerText = `RM ${earnings.toFixed(2)}`;
+        }
+
+        async function fetchHistory() {
+            if (!currentUser) return;
+            const { data } = await supabaseClient.from('time_entries').select('*, projects(name)').eq('user_id', currentUser.id).order('start_time', { ascending: false }).limit(10);
+            const list = document.getElementById('historyList');
+            if (!data || data.length === 0) return list.innerHTML = 'Tiada rekod.';
+
+            list.innerHTML = data.map(entry => {
+                const s = entry.duration_seconds;
+                const fTime = `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+                const date = new Date(entry.start_time).toLocaleDateString('ms-MY', { day:'2-digit', month:'short'});
+                return `<div class="history-item">
+                    <div style="display:flex; justify-content:space-between; width:100%;">
+                        <span class="task-name">${entry.description} <span style="font-weight:normal; font-size:11px; color:#888;">(${date})</span></span>
+                        <span class="task-duration">${fTime}</span>
+                    </div>
+                    <span class="project-tag">${entry.projects ? entry.projects.name : 'Umum'}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // --- EKSPORT CSV ---
+        async function exportToCSV() {
+            if (!currentUser) return;
+            const { data } = await supabaseClient.from('time_entries').select('*, projects(name)').eq('user_id', currentUser.id).order('start_time', { ascending: false });
+            if (!data || data.length === 0) return alert("Tiada data untuk dieksport.");
+
+            let csvContent = "Tarikh,Tugasan,Projek,Masa Mula,Masa Tamat,Durasi (Saat),Jam Berkerja\n";
+            data.forEach(e => {
+                const date = new Date(e.start_time).toLocaleDateString('ms-MY');
+                const start = new Date(e.start_time).toLocaleTimeString('ms-MY');
+                const end = new Date(e.end_time).toLocaleTimeString('ms-MY');
+                const proj = e.projects ? e.projects.name : "Umum";
+                const hours = (e.duration_seconds / 3600).toFixed(2);
+                csvContent += `"${date}","${e.description}","${proj}","${start}","${end}","${e.duration_seconds}","${hours}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Laporan_Clocky_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
