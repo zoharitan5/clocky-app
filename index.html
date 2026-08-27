@@ -65,7 +65,17 @@
         #appContainer { display: none; }
         #authContainer { display: block; }
         
-        #invoiceTemplate { display: none; padding: 30px; background: #fff; color: #333; font-family: Arial, sans-serif;}
+        /* Dibaiki: Templat invois diletakkan di luar skrin supaya html2pdf dapat membaca susun atur dengan sempurna */
+        #invoiceTemplate { 
+            position: absolute; 
+            left: -9999px; 
+            top: -9999px; 
+            width: 700px; 
+            padding: 30px; 
+            background: #fff; 
+            color: #333; 
+            font-family: Arial, sans-serif;
+        }
     </style>
 </head>
 <body>
@@ -158,6 +168,7 @@
         </div>
     </div>
 
+    <!-- Templat Invois (Tersembunyi di luar skrin) -->
     <div id="invoiceTemplate">
         <div style="display:flex; justify-content:space-between; border-bottom: 2px solid #1a5276; padding-bottom:10px;">
             <h2>CLOCKY ENTERPRISE</h2>
@@ -168,7 +179,7 @@
         </div>
         <div style="margin: 20px 0;">
             <p><strong>Pengeluar Invois:</strong> Akaun Pengurus (Admin)</p>
-            <p><strong>Ringkasan Perkhidmatan:</strong> Masa Bekerja & Penjejakan Tugasan Pasukan</p>
+            <p><strong>Ringkasan Perkhidmatan:</strong> Penjejakan Masa & Penyata Tugasan Projek</p>
         </div>
         <table style="width:100%; border-collapse: collapse; margin-top:20px;" border="1" cellpadding="8">
             <thead>
@@ -359,7 +370,6 @@
                 const fTime = `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
                 const date = new Date(entry.start_time).toLocaleDateString('ms-MY', { day:'2-digit', month:'short'});
                 
-                // Perlindungan jika user_id adalah null
                 const uIdSafe = entry.user_id ? entry.user_id.substring(0,6) : 'Sistem';
                 const userTag = currentUserRole === 'admin' ? `<span class="user-tag">ID: ${uIdSafe}...</span>` : '';
 
@@ -460,6 +470,7 @@
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
+        // --- PENJANAAN INVOIS PDF DIBAIKI ---
         function generateInvoicePDF() {
             if (!rawEntriesData || rawEntriesData.length === 0) return alert("Tiada rekod untuk dijana invois.");
 
@@ -494,7 +505,6 @@
             document.getElementById('invDate').innerText = `Tarikh: ${new Date().toLocaleDateString('ms-MY')}`;
 
             const element = document.getElementById('invoiceTemplate');
-            element.style.display = 'block';
 
             const opt = {
                 margin:       0.5,
@@ -504,9 +514,8 @@
                 jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
             };
 
-            html2pdf().set(opt).from(element).save().then(() => {
-                element.style.display = 'none';
-            });
+            // Menjana PDF secara terus dari susun atur off-screen
+            html2pdf().set(opt).from(element).save();
         }
     </script>
 </body>
