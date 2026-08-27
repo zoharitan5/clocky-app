@@ -3,181 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clocky Enterprise Pro</title>
-
-    <!-- Tetapan PWA & Mobile App -->
-    <meta name="theme-color" content="#1e293b">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link id="manifestPlaceholder" rel="manifest">
-
-    <!-- Supabase & Chart.js -->
+    <title>Clocky - Penjejak Masa Pasukan</title>
+    <!-- Supabase JS & Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-body: #f4f6f9; --sidebar-bg: #1e293b; --sidebar-text: #94a3b8;
-            --card-bg: #ffffff; --primary: #0284c7; --success: #10b981;
-            --danger: #ef4444; --warning: #f59e0b; --text-main: #0f172a;
+            --clockify-blue: #03a9f4; --clockify-dark-blue: #0288d1;
+            --bg-main: #f2f5f8; --border-color: #e4eaee;
+            --text-dark: #333333; --text-muted: #666666;
         }
-        * { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { margin: 0; background-color: var(--bg-body); color: var(--text-main); display: flex; min-height: 100vh; }
-        
-        .app-layout { display: flex; width: 100vw; min-height: 100vh; }
-        .sidebar {
-            width: 240px; background: var(--sidebar-bg); color: #fff; padding: 20px 15px;
-            display: flex; flex-direction: column; justify-content: space-between;
-        }
-        .sidebar-brand { font-size: 20px; font-weight: 700; color: #38bdf8; margin-bottom: 30px; display: flex; align-items: center; gap: 10px; }
-        .sidebar-menu { list-style: none; padding: 0; margin: 0; }
-        .sidebar-menu li {
-            padding: 12px 15px; border-radius: 8px; margin-bottom: 5px; color: var(--sidebar-text);
-            cursor: pointer; font-size: 14px; font-weight: 500; transition: 0.2s;
-        }
-        .sidebar-menu li.active, .sidebar-menu li:hover { background: #334155; color: #fff; }
-        
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; max-width: 1100px; margin: 0 auto; }
-        
-        .card { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        @media(max-width: 768px) { .app-layout { flex-direction: column; } .sidebar { width: 100%; } .grid-2 { grid-template-columns: 1fr; } }
-        
-        h2, h3 { margin-top: 0; color: var(--text-main); }
-        input, select {
-            width: 100%; padding: 10px 14px; margin-bottom: 12px;
-            border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px;
-        }
-        .timer-display { font-size: 44px; font-weight: 700; color: var(--text-main); margin: 15px 0; font-family: monospace; }
-        
-        button {
-            padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer;
-            font-weight: 600; font-size: 14px; transition: 0.2s; color: white;
-        }
-        .btn-start { background-color: var(--success); }
-        .btn-stop { background-color: var(--danger); display: none; }
-        .btn-primary { background-color: var(--primary); width: 100%; }
-        .btn-outline { background-color: transparent; color: var(--primary); border: 1px solid var(--primary); }
-        .btn-play { background-color: #0369a1; padding: 4px 10px; font-size: 12px; border-radius: 4px; margin-left: 10px; }
-        .btn-logout { background-color: #475569; width: 100%; }
-        .btn-export { background-color: var(--success); font-size: 12px; }
-        .btn-pdf { background-color: var(--warning); font-size: 12px; }
-        button:hover { opacity: 0.9; }
+        * { box-sizing: border-box; font-family: 'Roboto', sans-serif; }
+        body { margin: 0; padding: 0; background-color: var(--bg-main); color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; }
 
-        .role-badge { font-size: 11px; padding: 4px 10px; border-radius: 12px; font-weight: 600; text-transform: uppercase; }
-        .badge-admin { background-color: #f59e0b; color: #fff; }
-        .badge-member { background-color: #64748b; color: #fff; }
+        /* 1. TOP NAV ICONS BAR */
+        .top-icon-bar {
+            background: #ffffff; border-bottom: 1px solid var(--border-color); display: flex;
+            justify-content: center; gap: 15px; padding: 8px 0; font-size: 11px; color: #777;
+        }
+        .top-icon-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 4px 10px; border-radius: 4px; }
+        .top-icon-item.active { color: var(--clockify-blue); border-bottom: 2px solid var(--clockify-blue); font-weight: 500; }
 
-        /* Gaya Pengumpulan Rekod (Group Header) */
-        .group-header {
-            background: #f1f5f9; padding: 8px 12px; font-weight: 700; font-size: 13px;
-            color: #475569; border-radius: 6px; margin: 15px 0 5px 0; display: flex; justify-content: space-between;
+        /* 2. SUB HEADER (LOGO & WORKSPACE) */
+        .app-header {
+            background: #ffffff; border-bottom: 1px solid var(--border-color); padding: 10px 20px;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .history-item {
-            display: flex; justify-content: space-between; align-items: center; padding: 12px 10px;
-            border-bottom: 1px solid #e2e8f0; font-size: 14px;
+        .logo-area { display: flex; align-items: center; gap: 15px; font-weight: bold; font-size: 18px; color: #222; }
+        .workspace-badge { background: #eef2f5; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: normal; color: #555; }
+
+        /* 3. LAYOUT SIDEBAR & MAIN CONTENT */
+        .main-layout { display: flex; flex: 1; }
+        .sidebar { width: 220px; background: #ffffff; border-right: 1px solid var(--border-color); padding: 15px 0; }
+        .sidebar-section { font-size: 10px; font-weight: 700; color: #aaa; padding: 10px 20px 5px; text-transform: uppercase; }
+        .sidebar-item { padding: 10px 20px; font-size: 13px; color: #444; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .sidebar-item:hover, .sidebar-item.active { background: #eef7fc; color: var(--clockify-blue); border-left: 3px solid var(--clockify-blue); font-weight: 500; }
+
+        .content-area { flex: 1; padding: 20px 30px; overflow-y: auto; }
+
+        /* 4. TRACKER INPUT BAR (MELINTANG 1:1 CLOCKIFY) */
+        .tracker-bar {
+            background: #ffffff; border: 1px solid var(--border-color); border-radius: 4px;
+            display: flex; align-items: center; padding: 6px 15px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
         }
-        .task-name { font-weight: 600; color: #1e293b; }
-        .project-tag { font-size: 11px; color: #fff; background: var(--primary); padding: 2px 8px; border-radius: 12px; }
-        .user-tag { font-size: 11px; color: #475569; background: #e2e8f0; padding: 2px 8px; border-radius: 12px; margin-right: 5px;}
+        .tracker-input { flex: 1; border: none; outline: none; font-size: 14px; padding: 8px; }
+        .tracker-controls { display: flex; align-items: center; gap: 15px; }
+        .project-select { border: none; background: transparent; color: var(--clockify-blue); font-weight: 500; cursor: pointer; outline: none; font-size: 13px; }
+        .timer-val { font-family: monospace; font-size: 20px; font-weight: bold; color: #333; margin: 0 10px; }
+        .btn-start-clockify { background: var(--clockify-blue); color: #fff; border: none; padding: 10px 24px; border-radius: 3px; font-weight: 500; cursor: pointer; text-transform: uppercase; font-size: 13px; }
+        .btn-stop-clockify { background: #e53935; color: #fff; border: none; padding: 10px 24px; border-radius: 3px; font-weight: 500; cursor: pointer; text-transform: uppercase; font-size: 13px; display: none; }
+
+        /* 5. WEEK TOTAL HEADER & LIST GROUPING */
+        .week-header { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #666; margin-bottom: 10px; padding: 0 5px; }
+        .group-card { background: #ffffff; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 20px; overflow: hidden; }
+        .group-title-bar { background: #f8fafc; padding: 10px 15px; font-size: 12px; font-weight: bold; color: #666; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; }
         
+        .list-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .list-row:last-child { border-bottom: none; }
+        .row-left { display: flex; align-items: center; gap: 10px; }
+        .project-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--clockify-blue); display: inline-block; }
+        .row-right { display: flex; align-items: center; gap: 15px; font-family: monospace; color: #444; }
+        .btn-play-row { background: transparent; border: 1px solid #ccc; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+        .btn-play-row:hover { border-color: var(--clockify-blue); color: var(--clockify-blue); }
+
+        /* AUTH & MODAL */
+        #authContainer { display: block; max-width: 380px; margin: 80px auto; background: #fff; padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center; }
         #appContainer { display: none; width: 100%; }
-        #authContainer { display: block; max-width: 400px; margin: 80px auto; text-align: center; }
+        input[type="email"], input[type="password"] { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        .btn-full { width: 100%; padding: 10px; background: var(--clockify-blue); color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="card" id="authContainer">
-        <h2 style="color:var(--primary);">Clocky Enterprise</h2>
-        <p style="color:#64748b; font-size:14px;">Log masuk ke akaun anda</p>
+    <!-- KOTAK LOG MASUK -->
+    <div id="authContainer">
+        <h2 style="color:var(--clockify-blue); margin-top:0;">Clocky Enterprise</h2>
         <input type="email" id="emailInput" placeholder="E-mel">
         <input type="password" id="passwordInput" placeholder="Kata Laluan">
-        <button class="btn-primary" onclick="login()">Log Masuk</button>
-        <button class="btn-outline" style="width:100%; margin-top:8px;" onclick="register()">Daftar Akaun Baharu</button>
+        <button class="btn-full" onclick="login()">Log Masuk</button>
+        <button class="btn-full" style="background:transparent; color:#666; border:1px solid #ccc; margin-top:8px;" onclick="register()">Daftar Akaun</button>
     </div>
 
+    <!-- MAIN APP CONTAINER -->
     <div id="appContainer">
-        <div class="app-layout">
+        <!-- 1. TOP ICON NAVIGATION -->
+        <div class="top-icon-bar">
+            <div class="top-icon-item">🌴 Time off</div>
+            <div class="top-icon-item">📅 Scheduling</div>
+            <div class="top-icon-item">📁 Projects</div>
+            <div class="top-icon-item">🎯 Auto tracker</div>
+            <div class="top-icon-item">📆 Calendar</div>
+            <div class="top-icon-item active">⏱️ Timer</div>
+            <div class="top-icon-item">📋 Timesheet</div>
+            <div class="top-icon-item">📊 Reports</div>
+            <div class="top-icon-item">🧾 Invoicing</div>
+        </div>
+
+        <!-- 2. APP HEADER -->
+        <div class="app-header">
+            <div class="logo-area">
+                <span style="color:var(--clockify-blue);">⏱️ clocky</span>
+                <span class="workspace-badge">Akaun Pasukan <span id="userRoleBadge" style="font-weight:bold; color:#d97706;">(Admin)</span></span>
+            </div>
+            <div>
+                <button onclick="generateInvoicePDF()" style="background:#f59e0b; border:none; color:white; padding:6px 12px; border-radius:3px; font-size:12px; cursor:pointer;">Cetak PDF</button>
+                <button onclick="exportToCSV()" style="background:#10b981; border:none; color:white; padding:6px 12px; border-radius:3px; font-size:12px; cursor:pointer;">CSV</button>
+                <button onclick="logout()" style="background:#64748b; border:none; color:white; padding:6px 12px; border-radius:3px; font-size:12px; cursor:pointer; margin-left:5px;">Keluar</button>
+            </div>
+        </div>
+
+        <!-- 3. MAIN LAYOUT -->
+        <div class="main-layout">
+            <!-- SIDEBAR LEFT -->
             <div class="sidebar">
-                <div>
-                    <div class="sidebar-brand">⏱️ Clocky Enterprise</div>
-                    <ul class="sidebar-menu">
-                        <li class="active">🕒 Penjejak Masa</li>
-                        <li onclick="alert('Modul Laporan Lanjutan akan datang!')">📊 Laporan</li>
-                        <li onclick="alert('Modul Pasukan akan datang!')">👥 Pasukan</li>
-                    </ul>
-                </div>
-                <div>
-                    <div style="margin-bottom: 15px;">
-                        <span id="userRoleBadge" class="role-badge badge-member">Member</span>
-                    </div>
-                    <button class="btn-logout" onclick="logout()">Log Keluar</button>
-                </div>
+                <div class="sidebar-item active">⏱️ TIME TRACKER</div>
+                <div class="sidebar-item" onclick="alert('Modul Timesheet akan datang!')">📋 TIMESHEET</div>
+                <div class="sidebar-item" onclick="alert('Modul Calendar akan datang!')">📆 CALENDAR</div>
+                
+                <div class="sidebar-section">ANALYZE</div>
+                <div class="sidebar-item" onclick="toggleAnalytics()">📊 DASHBOARD</div>
+                <div class="sidebar-item" onclick="generateInvoicePDF()">🧾 REPORTS / PDF</div>
+
+                <div class="sidebar-section">MANAGE</div>
+                <div class="sidebar-item" onclick="addProject()">📁 PROJECTS (+)</div>
+                <div class="sidebar-item">👥 TEAM</div>
             </div>
 
-            <div class="main-content">
-                <div class="card">
-                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                        <button class="btn-outline active" id="tabTimer" style="flex:1;" onclick="setMode('timer')">Pemasa Nyata</button>
-                        <button class="btn-outline" id="tabManual" style="flex:1;" onclick="setMode('manual')">Kemasukan Manual</button>
-                    </div>
-
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <select id="projectSelect" style="flex: 1; margin: 0;"><option value="">-- Pilih Projek --</option></select>
-                        <button class="btn-outline" onclick="addProject()" style="width: auto; margin: 0;">+ Projek</button>
-                    </div>
-                    <input type="text" id="taskDesc" placeholder="Apa yang sedang anda kerjakan?">
-                    
-                    <div id="modeTimer" style="text-align: center;">
-                        <div class="timer-display" id="display">00:00:00</div>
-                        <button class="btn-start" id="btnStart" onclick="startTimer()">Mula Pemasa</button>
-                        <button class="btn-stop" id="btnStop" onclick="stopTimer()">Henti & Simpan</button>
-                    </div>
-
-                    <div id="modeManual" style="display: none; background: #f8fafc; padding: 15px; border-radius: 8px;">
-                        <label style="font-size: 12px;">Tarikh:</label><input type="date" id="manualDate">
-                        <div style="display: flex; gap: 10px;">
-                            <div style="flex: 1;"><label style="font-size: 12px;">Masa Mula:</label><input type="time" id="manualStart"></div>
-                            <div style="flex: 1;"><label style="font-size: 12px;">Masa Tamat:</label><input type="time" id="manualEnd"></div>
+            <!-- CONTENT AREA RIGHT -->
+            <div class="content-area">
+                
+                <!-- TRACKER INPUT BAR 1:1 CLOCKIFY -->
+                <div class="tracker-bar">
+                    <input type="text" id="taskDesc" class="tracker-input" placeholder="What are you working on?">
+                    <div class="tracker-controls">
+                        <select id="projectSelect" class="project-select">
+                            <option value="">+ Project</option>
+                        </select>
+                        <div style="display:flex; align-items:center; gap:5px; font-size:12px; color:#777;">
+                            <span>RM/Jam:</span>
+                            <input type="number" id="hourlyRate" value="50" style="width:50px; padding:3px; border:1px solid #ccc; border-radius:3px;" onchange="calculateEarnings()">
                         </div>
-                        <button class="btn-primary" onclick="saveManualTime()">Simpan Rekod Manual</button>
+                        <div class="timer-val" id="display">00:00:00</div>
+                        <button class="btn-start-clockify" id="btnStart" onclick="startTimer()">Start</button>
+                        <button class="btn-stop-clockify" id="btnStop" onclick="stopTimer()">Stop</button>
                     </div>
                 </div>
 
-                <div class="grid-2">
-                    <div class="card" style="background: #f0f9ff; border-left: 4px solid var(--primary);">
-                        <h3 id="dashboardTitle">Ringkasan Prestasi</h3>
-                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                            <div><span style="font-size:12px; color:#64748b;">Hari Ini</span><div id="todayTotal" style="font-size:16px; font-weight:bold;">00:00:00</div></div>
-                            <div><span style="font-size:12px; color:#64748b;">Minggu Ini</span><div id="weekTotal" style="font-size:16px; font-weight:bold; color:var(--primary);">00:00:00</div></div>
-                            <div style="text-align:right;"><span style="font-size:12px; color:#64748b;">Keseluruhan</span><div id="allTimeTotal" style="font-size:16px; font-weight:bold;">00:00:00</div></div>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #bae6fd; padding-top:10px;">
-                            <span style="font-size:12px; color:#64748b;">Kadar Upah (RM/Jam):</span>
-                            <input type="number" id="hourlyRate" placeholder="50" style="width:80px; margin:0;" onchange="calculateEarnings()">
-                        </div>
-                        <div style="text-align:right; margin-top:8px;">
-                            <span style="font-size:12px; color:#64748b;">Anggaran Pendapatan</span>
-                            <div id="totalEarnings" style="font-size:22px; font-weight:bold; color:var(--success);">RM 0.00</div>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h3>Analitik Masa Projek</h3>
-                        <canvas id="projectChart" style="max-height:180px;"></canvas>
-                    </div>
+                <!-- ANALYTICS CHART CONTAINER (TOGGLE) -->
+                <div id="analyticsCard" style="display:none; background:#fff; padding:20px; border:1px solid var(--border-color); border-radius:4px; margin-bottom:20px;">
+                    <h4 style="margin-top:0;">Analitik Masa Projek</h4>
+                    <canvas id="projectChart" style="max-height:180px;"></canvas>
                 </div>
 
-                <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <h3 id="historyTitle" style="margin:0;">Rekod Tugasan</h3>
-                        <div>
-                            <button class="btn-pdf" onclick="generateInvoicePDF()">Cetak PDF</button>
-                            <button class="btn-export" onclick="exportToCSV()">Eksport CSV</button>
-                        </div>
-                    </div>
-                    <div id="historyList">Memuatkan data...</div>
+                <!-- WEEK TOTAL HEADER -->
+                <div class="week-header">
+                    <span>This week</span>
+                    <span>Week total: <strong id="weekTotal" style="color:#222;">00:00:00</strong> | Earnings: <strong id="totalEarnings" style="color:#10b981;">RM 0.00</strong></span>
                 </div>
+
+                <!-- GROUPED LIST CONTAINER -->
+                <div id="historyList">Memuatkan data...</div>
+
             </div>
         </div>
     </div>
@@ -191,52 +178,22 @@
         let startTime, timerInterval, totalSecondsAllTime = 0;
         let chartInstance = null, rawEntriesData = [];
 
-        // --- PENJANAAN PWA AUTOMATIK ---
         window.onload = async () => {
-            initPWA();
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) { currentUser = session.user; await checkUserRole(); showApp(); }
-            document.getElementById('manualDate').value = new Date().toISOString().split('T')[0];
             const savedRate = localStorage.getItem('hourlyRate');
             if(savedRate) document.getElementById('hourlyRate').value = savedRate;
         };
 
-        function initPWA() {
-            const manifestObj = {
-                name: "Clocky Enterprise",
-                short_name: "Clocky",
-                start_url: ".",
-                display: "standalone",
-                background_color: "#f4f6f9",
-                theme_color: "#1e293b",
-                icons: [{ src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⏱️</text></svg>", sizes: "192x192 512x512", type: "image/svg+xml" }]
-            };
-            const blob = new Blob([JSON.stringify(manifestObj)], {type: 'application/json'});
-            document.getElementById('manifestPlaceholder').setAttribute('href', URL.createObjectURL(blob));
-        }
-
         async function checkUserRole() {
             const { data } = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).maybeSingle();
             currentUserRole = (data && data.role) ? data.role : 'member';
-            updateUIForRole();
-        }
-
-        function updateUIForRole() {
-            const badge = document.getElementById('userRoleBadge');
-            if (currentUserRole === 'admin') {
-                badge.innerText = 'Admin'; badge.className = 'role-badge badge-admin';
-                document.getElementById('historyTitle').innerText = 'Rekod Keseluruhan Pasukan';
-                document.getElementById('dashboardTitle').innerText = 'Ringkasan Pasukan';
-            } else {
-                badge.innerText = 'Staf'; badge.className = 'role-badge badge-member';
-                document.getElementById('historyTitle').innerText = 'Rekod Peribadi Anda';
-                document.getElementById('dashboardTitle').innerText = 'Ringkasan Peribadi';
-            }
+            document.getElementById('userRoleBadge').innerText = currentUserRole === 'admin' ? '(Admin)' : '(Staf)';
         }
 
         async function register() {
             const email = document.getElementById('emailInput').value, password = document.getElementById('passwordInput').value;
-            if(!email || !password) return alert("Masukkan e-mel dan kata laluan.");
+            if(!email || !password) return alert("Sila masukkan e-mel dan kata laluan.");
             const { data, error } = await supabaseClient.auth.signUp({ email, password });
             if (error) alert("Ralat: " + error.message);
             else { if (data.user) await supabaseClient.from('profiles').upsert([{ id: data.user.id, role: 'member' }]); alert("Pendaftaran berjaya!"); }
@@ -261,24 +218,24 @@
             fetchProjects(); fetchHistory(); loadDashboard();
         }
 
-        function setMode(mode) {
-            document.getElementById('modeTimer').style.display = mode === 'timer' ? 'block' : 'none';
-            document.getElementById('modeManual').style.display = mode === 'manual' ? 'block' : 'none';
+        function toggleAnalytics() {
+            const el = document.getElementById('analyticsCard');
+            el.style.display = el.style.display === 'none' ? 'block' : 'none';
         }
 
         async function fetchProjects() {
             const { data } = await supabaseClient.from('projects').select('*').order('created_at', { ascending: false });
             if (!data) return;
             const select = document.getElementById('projectSelect');
-            select.innerHTML = '<option value="">-- Pilih Projek --</option>';
+            select.innerHTML = '<option value="">+ Project</option>';
             data.forEach(p => select.innerHTML += `<option value="${p.id}">${p.name}</option>`);
         }
 
         async function addProject() {
-            const projectName = prompt("Sila masukkan nama projek baharu:");
+            const projectName = prompt("Nama projek baharu:");
             if (!projectName) return;
             const { error } = await supabaseClient.from('projects').insert([{ name: projectName }]);
-            if (!error) fetchProjects(); 
+            if (!error) fetchProjects();
         }
 
         function updateDisplay() {
@@ -293,7 +250,6 @@
             startTime = new Date(); timerInterval = setInterval(updateDisplay, 1000);
             document.getElementById('btnStart').style.display = 'none';
             document.getElementById('btnStop').style.display = 'inline-block';
-            document.getElementById('taskDesc').disabled = true; document.getElementById('projectSelect').disabled = true;
         }
 
         async function stopTimer() {
@@ -302,7 +258,6 @@
             saveToDatabase(startTime.toISOString(), new Date().toISOString(), durationSeconds);
             document.getElementById('btnStart').style.display = 'inline-block';
             document.getElementById('btnStop').style.display = 'none';
-            document.getElementById('taskDesc').disabled = false; document.getElementById('projectSelect').disabled = false;
             document.getElementById('display').innerText = '00:00:00';
         }
 
@@ -310,17 +265,6 @@
             document.getElementById('taskDesc').value = desc;
             if(projectId && projectId !== 'null') document.getElementById('projectSelect').value = projectId;
             startTimer();
-        }
-
-        async function saveManualTime() {
-            const dateVal = document.getElementById('manualDate').value;
-            const startVal = document.getElementById('manualStart').value;
-            const endVal = document.getElementById('manualEnd').value;
-            if (!dateVal || !startVal || !endVal) return alert("Sila lengkapkan maklumat.");
-            const sTime = new Date(`${dateVal}T${startVal}:00`), eTime = new Date(`${dateVal}T${endVal}:00`);
-            const durationSeconds = Math.floor((eTime - sTime) / 1000);
-            if (durationSeconds <= 0) return alert("Masa tamat mesti lebih lewat.");
-            saveToDatabase(sTime.toISOString(), eTime.toISOString(), durationSeconds);
         }
 
         async function saveToDatabase(startIso, endIso, durationSecs) {
@@ -336,7 +280,6 @@
             else alert("Ralat simpan data: " + error.message);
         }
 
-        // --- CIRI BAHARU: PENGUMPULAN REKOD (GROUP BY DATE) ---
         async function fetchHistory() {
             if (!currentUser) return;
             let query = supabaseClient.from('time_entries').select('*, projects(name)').order('start_time', { ascending: false });
@@ -357,8 +300,8 @@
             data.forEach(entry => {
                 const entryDate = new Date(entry.start_time).toLocaleDateString('ms-MY');
                 let groupLabel = entryDate;
-                if (entryDate === todayStr) groupLabel = 'Hari Ini (Today)';
-                else if (entryDate === yesterdayStr) groupLabel = 'Semalam (Yesterday)';
+                if (entryDate === todayStr) groupLabel = 'Today';
+                else if (entryDate === yesterdayStr) groupLabel = 'Yesterday';
 
                 if (!groups[groupLabel]) groups[groupLabel] = { entries: [], totalSecs: 0 };
                 groups[groupLabel].entries.push(entry);
@@ -371,33 +314,34 @@
             Object.keys(groups).forEach(label => {
                 const grp = groups[label];
                 htmlContent += `
-                    <div class="group-header">
-                        <span>${label}</span>
-                        <span>Total: ${format(grp.totalSecs)}</span>
-                    </div>`;
+                    <div class="group-card">
+                        <div class="group-title-bar">
+                            <span>${label}</span>
+                            <span>Total: ${format(grp.totalSecs)}</span>
+                        </div>`;
 
                 grp.entries.forEach(entry => {
-                    const s = entry.duration_seconds;
-                    const fTime = format(s);
-                    const uIdSafe = entry.user_id ? entry.user_id.substring(0,6) : 'Sistem';
-                    const userTag = currentUserRole === 'admin' ? `<span class="user-tag">ID: ${uIdSafe}</span>` : '';
+                    const fTime = format(entry.duration_seconds);
                     const projName = entry.projects ? entry.projects.name : 'Umum';
+                    const sTimeFormat = new Date(entry.start_time).toLocaleTimeString('ms-MY', {hour: '2-digit', minute:'2-digit'});
+                    const eTimeFormat = new Date(entry.end_time).toLocaleTimeString('ms-MY', {hour: '2-digit', minute:'2-digit'});
 
                     htmlContent += `
-                        <div class="history-item">
-                            <div>
-                                <div class="task-name">${entry.description}</div>
-                                <div style="margin-top:4px;">
-                                    ${userTag}
-                                    <span class="project-tag">${projName}</span>
-                                </div>
+                        <div class="list-row">
+                            <div class="row-left">
+                                <span class="task-name">${entry.description}</span>
+                                <span style="color:#aaa;">•</span>
+                                <span style="color:var(--clockify-blue); font-weight:500;"><span class="project-dot"></span> ${projName}</span>
                             </div>
-                            <div style="display:flex; align-items:center;">
-                                <span style="font-family:monospace; font-size:14px; font-weight:600; color:#334155;">${fTime}</span>
-                                <button class="btn-play" onclick="restartTask('${entry.description.replace(/'/g, "\\'")}', '${entry.project_id}')" title="Ulang Tugasan Ini">▶️</button>
+                            <div class="row-right">
+                                <span style="font-size:11px; color:#888;">${sTimeFormat} - ${eTimeFormat}</span>
+                                <span style="font-weight:bold;">${fTime}</span>
+                                <button class="btn-play-row" onclick="restartTask('${entry.description.replace(/'/g, "\\'")}', '${entry.project_id}')" title="Play">▶</button>
                             </div>
                         </div>`;
                 });
+
+                htmlContent += `</div>`;
             });
 
             list.innerHTML = htmlContent;
@@ -421,7 +365,7 @@
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [{ label: 'Jam', data: values, backgroundColor: '#0284c7', borderRadius: 4 }]
+                    datasets: [{ label: 'Jam', data: values, backgroundColor: '#03a9f4', borderRadius: 3 }]
                 },
                 options: { responsive: true, plugins: { legend: { display: false } } }
             });
@@ -435,25 +379,17 @@
             const { data } = await query;
             if (!data) return;
 
-            let totalSecondsToday = 0, totalSecondsWeek = 0; totalSecondsAllTime = 0;
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            // Kira tarikh awal minggu ini (Isnin)
+            let totalSecondsWeek = 0; totalSecondsAllTime = 0;
             const now = new Date();
             const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1)));
             firstDayOfWeek.setHours(0,0,0,0);
 
             data.forEach(entry => {
                 totalSecondsAllTime += entry.duration_seconds;
-                const eDate = new Date(entry.start_time);
-                
-                if (entry.start_time.split('T')[0] === todayStr) totalSecondsToday += entry.duration_seconds;
-                if (eDate >= firstDayOfWeek) totalSecondsWeek += entry.duration_seconds;
+                if (new Date(entry.start_time) >= firstDayOfWeek) totalSecondsWeek += entry.duration_seconds;
             });
 
             const format = (sec) => `${String(Math.floor(sec/3600)).padStart(2,'0')}:${String(Math.floor((sec%3600)/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
-            document.getElementById('allTimeTotal').innerText = format(totalSecondsAllTime);
-            document.getElementById('todayTotal').innerText = format(totalSecondsToday);
             document.getElementById('weekTotal').innerText = format(totalSecondsWeek);
             calculateEarnings();
         }
@@ -500,7 +436,7 @@
             });
 
             const printWin = window.open('', '', 'width=800,height=900');
-            printWin.document.write(`<!DOCTYPE html><html><head><title>Invois_Clocky_${new Date().toISOString().split('T')[0]}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#333;}.header{display:flex;justify-content:space-between;border-bottom:2px solid #0284c7;padding-bottom:15px;margin-bottom:20px;}table{width:100%;border-collapse:collapse;margin-top:20px;}th,td{padding:10px;border:1px solid #ddd;}th{background:#f2f2f2;text-align:left;}.total{text-align:right;margin-top:30px;color:#10b981;}</style></head><body><div class="header"><div><h2 style="color:#0284c7;margin:0;">CLOCKY ENTERPRISE</h2><p style="margin:5px 0;font-size:13px;">Sistem Penjejakan Masa Pasukan</p></div><div style="text-align:right;"><h3 style="margin:0;">INVOIS PERKHIDMATAN</h3><p style="margin:5px 0;font-size:12px;">Tarikh: ${new Date().toLocaleDateString('ms-MY')}</p></div></div><table><thead><tr><th>Perkara / Projek</th><th style="text-align:center;">Jumlah Jam</th><th style="text-align:right;">Kadar (RM/Jam)</th><th style="text-align:right;">Jumlah (RM)</th></tr></thead><tbody>${tableHtml}</tbody></table><div class="total"><h2 style="margin:0;">JUMLAH BESAR: RM ${grandTotal.toFixed(2)}</h2></div><script>window.onload=function(){window.print();};<\/script></body></html>`);
+            printWin.document.write(`<!DOCTYPE html><html><head><title>Invois_Clocky_${new Date().toISOString().split('T')[0]}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#333;}.header{display:flex;justify-content:space-between;border-bottom:2px solid #03a9f4;padding-bottom:15px;margin-bottom:20px;}table{width:100%;border-collapse:collapse;margin-top:20px;}th,td{padding:10px;border:1px solid #ddd;}th{background:#f2f2f2;text-align:left;}.total{text-align:right;margin-top:30px;color:#10b981;}</style></head><body><div class="header"><div><h2 style="color:#03a9f4;margin:0;">CLOCKY ENTERPRISE</h2><p style="margin:5px 0;font-size:13px;">Sistem Penjejakan Masa Pasukan</p></div><div style="text-align:right;"><h3 style="margin:0;">INVOIS PERKHIDMATAN</h3><p style="margin:5px 0;font-size:12px;">Tarikh: ${new Date().toLocaleDateString('ms-MY')}</p></div></div><table><thead><tr><th>Perkara / Projek</th><th style="text-align:center;">Jumlah Jam</th><th style="text-align:right;">Kadar (RM/Jam)</th><th style="text-align:right;">Jumlah (RM)</th></tr></thead><tbody>${tableHtml}</tbody></table><div class="total"><h2 style="margin:0;">JUMLAH BESAR: RM ${grandTotal.toFixed(2)}</h2></div><script>window.onload=function(){window.print();};<\/script></body></html>`);
             printWin.document.close();
         }
     </script>
