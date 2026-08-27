@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clocky Enterprise - Penjejak Masa Pasukan</title>
+    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Chart.js untuk Graf Visual -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- html2pdf.js untuk Penjanaan Invois PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -18,8 +23,8 @@
             padding: 40px 20px; margin: 0;
         }
         .card {
-            background: var(--card-light); padding: 30px; border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 550px;
+            background: var(--card-light); padding: 25px; border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 600px;
             margin-bottom: 20px; box-sizing: border-box; text-align: center;
         }
         .dashboard-card { background: #e8f4f8; border-left: 4px solid var(--gov-accent); padding: 20px; }
@@ -28,7 +33,7 @@
             width: 100%; padding: 10px; margin-bottom: 10px; 
             border-radius: 5px; border: 1px solid #ccc; font-family: 'Poppins', sans-serif; box-sizing: border-box;
         }
-        .timer-display { font-size: 48px; font-weight: 700; color: #2c3e50; margin: 20px 0; font-family: monospace; }
+        .timer-display { font-size: 48px; font-weight: 700; color: #2c3e50; margin: 15px 0; font-family: monospace; }
         button {
             font-family: 'Poppins', sans-serif; padding: 10px 20px; border: none; border-radius: 5px; 
             cursor: pointer; color: white; font-weight: 600; font-size: 14px; transition: 0.3s; margin: 5px;
@@ -41,6 +46,7 @@
         .btn-tab.active { background: var(--gov-blue); color: white; }
         .btn-logout { background-color: #7f8c8d; font-size: 12px; padding: 5px 10px; margin: 0;}
         .btn-export { background-color: #27ae60; font-size: 12px; padding: 5px 10px; margin: 0;}
+        .btn-pdf { background-color: #e67e22; font-size: 12px; padding: 5px 10px; margin: 0;}
         button:hover { opacity: 0.9; }
         
         .role-badge { font-size: 10px; padding: 3px 8px; border-radius: 10px; font-weight: bold; text-transform: uppercase; margin-left: 8px;}
@@ -58,10 +64,14 @@
 
         #appContainer { display: none; }
         #authContainer { display: block; }
+        
+        /* Templat Tersembunyi untuk Invois PDF */
+        #invoiceTemplate { display: none; padding: 30px; background: #fff; color: #333; font-family: Arial, sans-serif;}
     </style>
 </head>
 <body>
 
+    <!-- Kotak Log Masuk -->
     <div class="card" id="authContainer">
         <h2>Clocky Enterprise</h2>
         <input type="email" id="emailInput" placeholder="E-mel">
@@ -70,7 +80,8 @@
         <button class="btn-outline" onclick="register()">Daftar Akaun Baharu</button>
     </div>
 
-    <div id="appContainer" style="width: 100%; max-width: 550px;">
+    <!-- Antaramuka Utama -->
+    <div id="appContainer" style="width: 100%; max-width: 600px;">
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <div style="display: flex; align-items: center;">
@@ -108,6 +119,7 @@
             </div>
         </div>
 
+        <!-- Dashboard Ringkasan & Kewangan -->
         <div class="card dashboard-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <h3 style="margin: 0;" id="dashboardTitle">Ringkasan Prestasi</h3>
@@ -133,12 +145,52 @@
             </div>
         </div>
 
+        <!-- FASA 3: CARTA VISUAL (CHART.JS) -->
         <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="text-align: left; margin-bottom: 15px;">Analitik Masa Mengikut Projek</h3>
+            <canvas id="projectChart" style="max-height: 250px;"></canvas>
+        </div>
+
+        <!-- Senarai Rekod & PDF Invois -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 5px;">
                 <h3 style="margin: 0;" id="historyTitle">Rekod Tugasan</h3>
-                <button class="btn-export" onclick="exportToCSV()">Muat Turun (CSV)</button>
+                <div>
+                    <button class="btn-pdf" onclick="generateInvoicePDF()">Cetak Invois PDF</button>
+                    <button class="btn-export" onclick="exportToCSV()">Eksport CSV</button>
+                </div>
             </div>
             <div id="historyList">Memuatkan data...</div>
+        </div>
+    </div>
+
+    <!-- Templat Invois Tersembunyi (Disimpan sebagai PDF) -->
+    <div id="invoiceTemplate">
+        <div style="display:flex; justify-content:space-between; border-bottom: 2px solid #1a5276; padding-bottom:10px;">
+            <h2>CLOCKY ENTERPRISE</h2>
+            <div style="text-align:right;">
+                <h3>INVOIS PERKHIDMATAN</h3>
+                <p id="invDate" style="font-size:12px; margin:0;"></p>
+            </div>
+        </div>
+        <div style="margin: 20px 0;">
+            <p><strong>Pengeluar Invois:</strong> Akaun Pengurus (Admin)</p>
+            <p><strong>Ringkasan Perkhidmatan:</strong> Masa Bekerja & Penjejakan Tugasan Pasukan</p>
+        </div>
+        <table style="width:100%; border-collapse: collapse; margin-top:20px;" border="1" cellpadding="8">
+            <thead>
+                <tr style="background:#f2f2f2;">
+                    <th>Perkara / Projek</th>
+                    <th>Jumlah Jam</th>
+                    <th>Kadar (RM/Jam)</th>
+                    <th>Jumlah (RM)</th>
+                </tr>
+            </thead>
+            <tbody id="invoiceTableBody">
+            </tbody>
+        </table>
+        <div style="text-align:right; margin-top:20px;">
+            <h3 id="invoiceGrandTotal">JUMLAH BESAR: RM 0.00</h3>
         </div>
     </div>
 
@@ -151,6 +203,8 @@
         let currentUserRole = 'member';
         let startTime, timerInterval;
         let totalSecondsAllTime = 0;
+        let chartInstance = null;
+        let rawEntriesData = [];
 
         window.onload = async () => {
             const { data: { session } } = await supabaseClient.auth.getSession();
@@ -162,12 +216,11 @@
 
         // --- AUTH & PERANAN ---
         async function checkUserRole() {
-            const { data, error } = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).single();
-            if (data) {
-                currentUserRole = data.role || 'member';
+            const { data } = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).maybeSingle();
+            if (data && data.role) {
+                currentUserRole = data.role;
             } else {
-                // Jika profil tiada, daftarkan sebagai member
-                await supabaseClient.from('profiles').insert([{ id: currentUser.id, role: 'member' }]);
+                await supabaseClient.from('profiles').upsert([{ id: currentUser.id, role: 'member' }]);
                 currentUserRole = 'member';
             }
             updateUIForRole();
@@ -195,9 +248,7 @@
             const { data, error } = await supabaseClient.auth.signUp({ email, password });
             if (error) alert("Ralat: " + error.message);
             else {
-                if (data.user) {
-                    await supabaseClient.from('profiles').insert([{ id: data.user.id, role: 'member' }]);
-                }
+                if (data.user) await supabaseClient.from('profiles').upsert([{ id: data.user.id, role: 'member' }]);
                 alert("Pendaftaran berjaya! Sila klik Log Masuk.");
             }
         }
@@ -296,26 +347,29 @@
             else alert("Ralat simpan data: " + error.message);
         }
 
-        // --- SEJARAH (ADMIN VS MEMBER FILTER) ---
+        // --- SEJARAH & CARTA (CHART.JS) ---
         async function fetchHistory() {
             if (!currentUser) return;
-            let query = supabaseClient.from('time_entries').select('*, projects(name), profiles(role)').order('start_time', { ascending: false }).limit(15);
+            let query = supabaseClient.from('time_entries').select('*, projects(name)').order('start_time', { ascending: false });
             
-            // Jika BUKAN Admin, tapis data untuk paparkan rekod peribadi sahaja
             if (currentUserRole !== 'admin') {
                 query = query.eq('user_id', currentUser.id);
             }
 
-            const { data } = await query;
+            const { data, error } = await query;
             const list = document.getElementById('historyList');
-            if (!data || data.length === 0) return list.innerHTML = 'Tiada rekod.';
+            if (error || !data || data.length === 0) {
+                list.innerHTML = 'Tiada rekod.';
+                return;
+            }
 
-            list.innerHTML = data.map(entry => {
+            rawEntriesData = data; // Simpan untuk penjanaan PDF
+
+            // Papar 10 rekod terbaharu
+            list.innerHTML = data.slice(0, 10).map(entry => {
                 const s = entry.duration_seconds;
                 const fTime = `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
                 const date = new Date(entry.start_time).toLocaleDateString('ms-MY', { day:'2-digit', month:'short'});
-                
-                // Papar tag pengguna jika Admin melihat data
                 const userTag = currentUserRole === 'admin' ? `<span class="user-tag">ID: ${entry.user_id.substring(0,6)}...</span>` : '';
 
                 return `<div class="history-item">
@@ -329,16 +383,49 @@
                     </div>
                 </div>`;
             }).join('');
+
+            // Bina Carta Visual
+            renderProjectChart(data);
+        }
+
+        function renderProjectChart(data) {
+            const projectTotals = {};
+            data.forEach(entry => {
+                const projName = entry.projects ? entry.projects.name : 'Umum';
+                const hours = entry.duration_seconds / 3600;
+                projectTotals[projName] = (projectTotals[projName] || 0) + hours;
+            });
+
+            const labels = Object.keys(projectTotals);
+            const values = Object.values(projectTotals).map(v => v.toFixed(2));
+
+            const ctx = document.getElementById('projectChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy(); // Padam carta lama jika ada
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Jumlah Jam Bekerja',
+                        data: values,
+                        backgroundColor: '#2980b9',
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Jam' } } }
+                }
+            });
         }
 
         // --- DASHBOARD ANALITIK ---
         async function loadDashboard() {
             if (!currentUser) return;
             let query = supabaseClient.from('time_entries').select('duration_seconds, start_time');
-            
-            if (currentUserRole !== 'admin') {
-                query = query.eq('user_id', currentUser.id);
-            }
+            if (currentUserRole !== 'admin') query = query.eq('user_id', currentUser.id);
 
             const { data } = await query;
             if (!data) return;
@@ -364,16 +451,11 @@
             document.getElementById('totalEarnings').innerText = `RM ${earnings.toFixed(2)}`;
         }
 
+        // --- EKSPORT CSV ---
         async function exportToCSV() {
-            if (!currentUser) return;
-            let query = supabaseClient.from('time_entries').select('*, projects(name)').order('start_time', { ascending: false });
-            if (currentUserRole !== 'admin') query = query.eq('user_id', currentUser.id);
-            
-            const { data } = await query;
-            if (!data || data.length === 0) return alert("Tiada data untuk dieksport.");
-
+            if (!rawEntriesData || rawEntriesData.length === 0) return alert("Tiada data untuk dieksport.");
             let csvContent = "Tarikh,Pengguna ID,Tugasan,Projek,Masa Mula,Masa Tamat,Durasi (Saat),Jam Berkerja\n";
-            data.forEach(e => {
+            rawEntriesData.forEach(e => {
                 const date = new Date(e.start_time).toLocaleDateString('ms-MY');
                 const start = new Date(e.start_time).toLocaleTimeString('ms-MY');
                 const end = new Date(e.end_time).toLocaleTimeString('ms-MY');
@@ -387,6 +469,57 @@
             link.href = URL.createObjectURL(blob);
             link.download = `Laporan_Clocky_${currentUserRole}_${new Date().toISOString().split('T')[0]}.csv`;
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
+        // --- FASA 3: PENJANAAN INVOIS PDF (HTML2PDF) ---
+        function generateInvoicePDF() {
+            if (!rawEntriesData || rawEntriesData.length === 0) return alert("Tiada rekod untuk dijana invois.");
+
+            const rate = parseFloat(document.getElementById('hourlyRate').value) || 0;
+            const projectTotals = {};
+
+            rawEntriesData.forEach(entry => {
+                const projName = entry.projects ? entry.projects.name : 'Umum / Tugasan Lain';
+                const hours = entry.duration_seconds / 3600;
+                projectTotals[projName] = (projectTotals[projName] || 0) + hours;
+            });
+
+            let tableHtml = '';
+            let grandTotal = 0;
+
+            Object.keys(projectTotals).forEach(proj => {
+                const hrs = projectTotals[proj];
+                const totalRM = hrs * rate;
+                grandTotal += totalRM;
+
+                tableHtml += `
+                    <tr>
+                        <td>${proj}</td>
+                        <td style="text-align:center;">${hrs.toFixed(2)} Jam</td>
+                        <td style="text-align:right;">RM ${rate.toFixed(2)}</td>
+                        <td style="text-align:right;">RM ${totalRM.toFixed(2)}</td>
+                    </tr>`;
+            });
+
+            document.getElementById('invoiceTableBody').innerHTML = tableHtml;
+            document.getElementById('invoiceGrandTotal').innerText = `JUMLAH BESAR: RM ${grandTotal.toFixed(2)}`;
+            document.getElementById('invDate').innerText = `Tarikh: ${new Date().toLocaleDateString('ms-MY')}`;
+
+            // Salin templat dan tukar ke PDF menggunakan html2pdf
+            const element = document.getElementById('invoiceTemplate');
+            element.style.display = 'block'; // Tunjukkan sekejap untuk muat turun
+
+            const opt = {
+                margin:       0.5,
+                filename:     `Invois_Clocky_${new Date().toISOString().split('T')[0]}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                element.style.display = 'none'; // Sembunyikan semula
+            });
         }
     </script>
 </body>
