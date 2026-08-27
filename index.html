@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clocky - Penjejak Masa</title>
+    <title>Clocky Enterprise - Penjejak Masa Pasukan</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-light: #f0f4f8; --card-light: #ffffff;
             --gov-blue: #1a5276; --gov-accent: #2980b9; --border-light: #d1d9e6;
+            --admin-gold: #f39c12;
         }
         body {
             font-family: 'Poppins', sans-serif; background-color: var(--bg-light);
@@ -18,7 +19,7 @@
         }
         .card {
             background: var(--card-light); padding: 30px; border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 500px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 550px;
             margin-bottom: 20px; box-sizing: border-box; text-align: center;
         }
         .dashboard-card { background: #e8f4f8; border-left: 4px solid var(--gov-accent); padding: 20px; }
@@ -41,55 +42,62 @@
         .btn-logout { background-color: #7f8c8d; font-size: 12px; padding: 5px 10px; margin: 0;}
         .btn-export { background-color: #27ae60; font-size: 12px; padding: 5px 10px; margin: 0;}
         button:hover { opacity: 0.9; }
+        
+        .role-badge { font-size: 10px; padding: 3px 8px; border-radius: 10px; font-weight: bold; text-transform: uppercase; margin-left: 8px;}
+        .badge-admin { background-color: var(--admin-gold); color: white; }
+        .badge-member { background-color: #95a5a6; color: white; }
 
-.history-item {
+        .history-item {
             display: flex; flex-direction: column; align-items: flex-start; padding: 12px 0;
             border-bottom: 1px solid var(--border-light); font-size: 14px;
         }
         .task-name { font-weight: 600; color: #2c3e50; }
         .task-duration { color: #7f8c8d; font-family: monospace; font-size: 15px;}
         .project-tag { font-size: 11px; color: #fff; background: var(--gov-blue); padding: 2px 8px; border-radius: 12px; margin-top: 5px;}
+        .user-tag { font-size: 11px; color: #333; background: #e0e0e0; padding: 2px 8px; border-radius: 12px; margin-top: 5px; margin-right: 5px;}
 
-#appContainer { display: none; }
+        #appContainer { display: none; }
         #authContainer { display: block; }
     </style>
 </head>
 <body>
 
-<div class="card" id="authContainer">
-        <h2>Log Masuk Clocky</h2>
+    <div class="card" id="authContainer">
+        <h2>Clocky Enterprise</h2>
         <input type="email" id="emailInput" placeholder="E-mel">
         <input type="password" id="passwordInput" placeholder="Kata Laluan">
         <button class="btn-primary" onclick="login()">Log Masuk</button>
         <button class="btn-outline" onclick="register()">Daftar Akaun Baharu</button>
     </div>
 
-<div id="appContainer" style="width: 100%; max-width: 500px;">
-        <!-- Panel Pemasa / Manual -->
+    <div id="appContainer" style="width: 100%; max-width: 550px;">
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin:0;">Clocky Tracker</h2>
+                <div style="display: flex; align-items: center;">
+                    <h2 style="margin:0;">Clocky Tracker</h2>
+                    <span id="userRoleBadge" class="role-badge badge-member">Member</span>
+                </div>
                 <button class="btn-logout" onclick="logout()">Log Keluar</button>
             </div>
-
-<div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <button class="btn-tab active" id="tabTimer" onclick="setMode('timer')">Pemasa</button>
                 <button class="btn-tab" id="tabManual" onclick="setMode('manual')">Manual</button>
             </div>
 
-<div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                 <select id="projectSelect" style="flex: 1; margin: 0;"><option value="">-- Tiada Projek --</option></select>
                 <button class="btn-outline" onclick="addProject()" style="width: auto; margin: 0; padding: 0 15px;">+ Projek</button>
             </div>
             <input type="text" id="taskDesc" placeholder="Apa yang sedang anda buat?">
-
-<div id="modeTimer">
+            
+            <div id="modeTimer">
                 <div class="timer-display" id="display">00:00:00</div>
                 <button class="btn-start" id="btnStart" onclick="startTimer()">Mula</button>
                 <button class="btn-stop" id="btnStop" onclick="stopTimer()">Henti</button>
             </div>
 
-<div id="modeManual" style="display: none; text-align: left; background: #f9f9f9; padding: 15px; border-radius: 8px; margin-top: 15px;">
+            <div id="modeManual" style="display: none; text-align: left; background: #f9f9f9; padding: 15px; border-radius: 8px; margin-top: 15px;">
                 <label style="font-size: 12px; color: #555;">Tarikh:</label>
                 <input type="date" id="manualDate">
                 <div style="display: flex; gap: 10px;">
@@ -100,17 +108,16 @@
             </div>
         </div>
 
-<!-- Dashboard Ringkasan & Kewangan -->
         <div class="card dashboard-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="margin: 0;">Ringkasan Prestasi</h3>
+                <h3 style="margin: 0;" id="dashboardTitle">Ringkasan Prestasi</h3>
                 <div style="display: flex; align-items: center; gap: 5px;">
                     <label style="font-size: 12px; color: #555;">Kadar/Jam:</label>
                     <input type="number" id="hourlyRate" placeholder="RM" style="width: 70px; margin: 0; padding: 5px;" value="0" onchange="calculateEarnings()">
                 </div>
             </div>
-
-<div style="display: flex; justify-content: space-between; text-align: left; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 10px;">
+            
+            <div style="display: flex; justify-content: space-between; text-align: left; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 10px;">
                 <div>
                     <div style="font-size: 13px; color: #7f8c8d;">Masa Hari Ini</div>
                     <div id="todayTotal" style="font-size: 20px; font-weight: bold; color: var(--gov-blue);">00:00:00</div>
@@ -126,49 +133,81 @@
             </div>
         </div>
 
-<!-- Senarai Rekod -->
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="margin: 0;">Rekod Tugasan</h3>
+                <h3 style="margin: 0;" id="historyTitle">Rekod Tugasan</h3>
                 <button class="btn-export" onclick="exportToCSV()">Muat Turun (CSV)</button>
             </div>
             <div id="historyList">Memuatkan data...</div>
         </div>
     </div>
 
-<script>
+    <script>
         const SUPABASE_URL = 'https://bigvbcrhymoihvogkglb.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_BHsWAvLJy93iA2NQZ4Am-g_MVRJtXnj';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentUser = null;
+        let currentUserRole = 'member';
         let startTime, timerInterval;
-        let totalSecondsAllTime = 0; // Untuk simpan jumlah jam keseluruhan bagi kiraan duit
+        let totalSecondsAllTime = 0;
 
         window.onload = async () => {
             const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) { currentUser = session.user; showApp(); }
+            if (session) { currentUser = session.user; await checkUserRole(); showApp(); }
             document.getElementById('manualDate').value = new Date().toISOString().split('T')[0];
-            
-            // Tarik kadar jam dari simpanan pelayar (jika ada)
             const savedRate = localStorage.getItem('hourlyRate');
             if(savedRate) document.getElementById('hourlyRate').value = savedRate;
         };
 
-        // --- AUTH ---
+        // --- AUTH & PERANAN ---
+        async function checkUserRole() {
+            const { data, error } = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).single();
+            if (data) {
+                currentUserRole = data.role || 'member';
+            } else {
+                // Jika profil tiada, daftarkan sebagai member
+                await supabaseClient.from('profiles').insert([{ id: currentUser.id, role: 'member' }]);
+                currentUserRole = 'member';
+            }
+            updateUIForRole();
+        }
+
+        function updateUIForRole() {
+            const badge = document.getElementById('userRoleBadge');
+            if (currentUserRole === 'admin') {
+                badge.innerText = 'Admin (Pengurus)';
+                badge.className = 'role-badge badge-admin';
+                document.getElementById('historyTitle').innerText = 'Rekod Keseluruhan Pasukan';
+                document.getElementById('dashboardTitle').innerText = 'Ringkasan Pasukan';
+            } else {
+                badge.innerText = 'Staf / Member';
+                badge.className = 'role-badge badge-member';
+                document.getElementById('historyTitle').innerText = 'Rekod Peribadi Anda';
+                document.getElementById('dashboardTitle').innerText = 'Ringkasan Peribadi';
+            }
+        }
+
         async function register() {
             const email = document.getElementById('emailInput').value;
             const password = document.getElementById('passwordInput').value;
             if(!email || !password) return alert("Sila masukkan e-mel dan kata laluan.");
-            const { error } = await supabaseClient.auth.signUp({ email, password });
-            if (error) alert("Ralat: " + error.message); else alert("Pendaftaran berjaya! Sila klik Log Masuk.");
+            const { data, error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) alert("Ralat: " + error.message);
+            else {
+                if (data.user) {
+                    await supabaseClient.from('profiles').insert([{ id: data.user.id, role: 'member' }]);
+                }
+                alert("Pendaftaran berjaya! Sila klik Log Masuk.");
+            }
         }
 
         async function login() {
             const email = document.getElementById('emailInput').value;
             const password = document.getElementById('passwordInput').value;
             const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            if (error) alert("Gagal log masuk: " + error.message); else { currentUser = data.user; showApp(); }
+            if (error) alert("Gagal log masuk: " + error.message); 
+            else { currentUser = data.user; await checkUserRole(); showApp(); }
         }
 
         async function logout() {
@@ -257,10 +296,51 @@
             else alert("Ralat simpan data: " + error.message);
         }
 
-        // --- DASHBOARD & SEJARAH ---
+        // --- SEJARAH (ADMIN VS MEMBER FILTER) ---
+        async function fetchHistory() {
+            if (!currentUser) return;
+            let query = supabaseClient.from('time_entries').select('*, projects(name), profiles(role)').order('start_time', { ascending: false }).limit(15);
+            
+            // Jika BUKAN Admin, tapis data untuk paparkan rekod peribadi sahaja
+            if (currentUserRole !== 'admin') {
+                query = query.eq('user_id', currentUser.id);
+            }
+
+            const { data } = await query;
+            const list = document.getElementById('historyList');
+            if (!data || data.length === 0) return list.innerHTML = 'Tiada rekod.';
+
+            list.innerHTML = data.map(entry => {
+                const s = entry.duration_seconds;
+                const fTime = `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+                const date = new Date(entry.start_time).toLocaleDateString('ms-MY', { day:'2-digit', month:'short'});
+                
+                // Papar tag pengguna jika Admin melihat data
+                const userTag = currentUserRole === 'admin' ? `<span class="user-tag">ID: ${entry.user_id.substring(0,6)}...</span>` : '';
+
+                return `<div class="history-item">
+                    <div style="display:flex; justify-content:space-between; width:100%;">
+                        <span class="task-name">${entry.description} <span style="font-weight:normal; font-size:11px; color:#888;">(${date})</span></span>
+                        <span class="task-duration">${fTime}</span>
+                    </div>
+                    <div>
+                        ${userTag}
+                        <span class="project-tag">${entry.projects ? entry.projects.name : 'Umum'}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // --- DASHBOARD ANALITIK ---
         async function loadDashboard() {
             if (!currentUser) return;
-            const { data } = await supabaseClient.from('time_entries').select('duration_seconds, start_time').eq('user_id', currentUser.id);
+            let query = supabaseClient.from('time_entries').select('duration_seconds, start_time');
+            
+            if (currentUserRole !== 'admin') {
+                query = query.eq('user_id', currentUser.id);
+            }
+
+            const { data } = await query;
             if (!data) return;
 
             let totalSecondsToday = 0; totalSecondsAllTime = 0;
@@ -279,52 +359,33 @@
 
         function calculateEarnings() {
             const rate = parseFloat(document.getElementById('hourlyRate').value) || 0;
-            localStorage.setItem('hourlyRate', rate); // Simpan dalam pelayar
-            const totalHours = totalSecondsAllTime / 3600;
-            const earnings = totalHours * rate;
+            localStorage.setItem('hourlyRate', rate);
+            const earnings = (totalSecondsAllTime / 3600) * rate;
             document.getElementById('totalEarnings').innerText = `RM ${earnings.toFixed(2)}`;
         }
 
-        async function fetchHistory() {
-            if (!currentUser) return;
-            const { data } = await supabaseClient.from('time_entries').select('*, projects(name)').eq('user_id', currentUser.id).order('start_time', { ascending: false }).limit(10);
-            const list = document.getElementById('historyList');
-            if (!data || data.length === 0) return list.innerHTML = 'Tiada rekod.';
-
-            list.innerHTML = data.map(entry => {
-                const s = entry.duration_seconds;
-                const fTime = `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-                const date = new Date(entry.start_time).toLocaleDateString('ms-MY', { day:'2-digit', month:'short'});
-                return `<div class="history-item">
-                    <div style="display:flex; justify-content:space-between; width:100%;">
-                        <span class="task-name">${entry.description} <span style="font-weight:normal; font-size:11px; color:#888;">(${date})</span></span>
-                        <span class="task-duration">${fTime}</span>
-                    </div>
-                    <span class="project-tag">${entry.projects ? entry.projects.name : 'Umum'}</span>
-                </div>`;
-            }).join('');
-        }
-
-        // --- EKSPORT CSV ---
         async function exportToCSV() {
             if (!currentUser) return;
-            const { data } = await supabaseClient.from('time_entries').select('*, projects(name)').eq('user_id', currentUser.id).order('start_time', { ascending: false });
+            let query = supabaseClient.from('time_entries').select('*, projects(name)').order('start_time', { ascending: false });
+            if (currentUserRole !== 'admin') query = query.eq('user_id', currentUser.id);
+            
+            const { data } = await query;
             if (!data || data.length === 0) return alert("Tiada data untuk dieksport.");
 
-            let csvContent = "Tarikh,Tugasan,Projek,Masa Mula,Masa Tamat,Durasi (Saat),Jam Berkerja\n";
+            let csvContent = "Tarikh,Pengguna ID,Tugasan,Projek,Masa Mula,Masa Tamat,Durasi (Saat),Jam Berkerja\n";
             data.forEach(e => {
                 const date = new Date(e.start_time).toLocaleDateString('ms-MY');
                 const start = new Date(e.start_time).toLocaleTimeString('ms-MY');
                 const end = new Date(e.end_time).toLocaleTimeString('ms-MY');
                 const proj = e.projects ? e.projects.name : "Umum";
                 const hours = (e.duration_seconds / 3600).toFixed(2);
-                csvContent += `"${date}","${e.description}","${proj}","${start}","${end}","${e.duration_seconds}","${hours}"\n`;
+                csvContent += `"${date}","${e.user_id}","${e.description}","${proj}","${start}","${end}","${e.duration_seconds}","${hours}"\n`;
             });
 
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `Laporan_Clocky_${new Date().toISOString().split('T')[0]}.csv`;
+            link.download = `Laporan_Clocky_${currentUserRole}_${new Date().toISOString().split('T')[0]}.csv`;
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
     </script>
