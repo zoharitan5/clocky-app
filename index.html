@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clocky - Penjejak Masa Pasukan</title>
+    <title>Clocky - Penjejak Masa Pasukan Interaktif</title>
     <!-- Supabase JS & Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome 6 Icons (Visual Vektor 1:1 Clockify) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -20,9 +22,14 @@
         /* 1. TOP NAV ICONS BAR */
         .top-icon-bar {
             background: #ffffff; border-bottom: 1px solid var(--border-color); display: flex;
-            justify-content: center; gap: 15px; padding: 8px 0; font-size: 11px; color: #777;
+            justify-content: center; gap: 15px; padding: 6px 0; font-size: 11px; color: #777; user-select: none;
         }
-        .top-icon-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 4px 10px; border-radius: 4px; }
+        .top-icon-item { 
+            display: flex; flex-direction: column; align-items: center; gap: 4px; 
+            cursor: pointer; padding: 6px 12px; border-radius: 4px; transition: 0.2s;
+        }
+        .top-icon-item i { font-size: 16px; }
+        .top-icon-item:hover { color: var(--clockify-blue); background: #f0f9ff; }
         .top-icon-item.active { color: var(--clockify-blue); border-bottom: 2px solid var(--clockify-blue); font-weight: 500; }
 
         /* 2. SUB HEADER (LOGO & WORKSPACE) */
@@ -30,22 +37,22 @@
             background: #ffffff; border-bottom: 1px solid var(--border-color); padding: 10px 20px;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .logo-area { display: flex; align-items: center; gap: 15px; font-weight: bold; font-size: 18px; color: #222; }
+        .logo-area { display: flex; align-items: center; gap: 12px; font-weight: bold; font-size: 18px; color: #222; }
         .workspace-badge { background: #eef2f5; padding: 3px 10px; border-radius: 4px; font-size: 12px; font-weight: normal; color: #555; }
 
         /* 3. LAYOUT SIDEBAR & MAIN CONTENT */
         .main-layout { display: flex; flex: 1; }
         .sidebar { width: 220px; background: #ffffff; border-right: 1px solid var(--border-color); padding: 15px 0; }
         .sidebar-section { font-size: 10px; font-weight: 700; color: #aaa; padding: 10px 20px 5px; text-transform: uppercase; }
-        .sidebar-item { padding: 10px 20px; font-size: 13px; color: #444; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .sidebar-item { padding: 10px 20px; font-size: 13px; color: #444; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
         .sidebar-item:hover, .sidebar-item.active { background: #eef7fc; color: var(--clockify-blue); border-left: 3px solid var(--clockify-blue); font-weight: 500; }
 
         .content-area { flex: 1; padding: 20px 30px; overflow-y: auto; }
 
-        /* 4. TRACKER INPUT BAR (MELINTANG 1:1 CLOCKIFY) */
+        /* 4. TRACKER INPUT BAR */
         .tracker-bar {
             background: #ffffff; border: 1px solid var(--border-color); border-radius: 4px;
-            display: flex; align-items: center; padding: 6px 15px; margin-bottom: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            display: flex; align-items: center; padding: 6px 15px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
         }
         .tracker-input { flex: 1; border: none; outline: none; font-size: 14px; padding: 8px; }
         .tracker-controls { display: flex; align-items: center; gap: 15px; }
@@ -64,8 +71,12 @@
         .row-left { display: flex; align-items: center; gap: 10px; }
         .project-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--clockify-blue); display: inline-block; }
         .row-right { display: flex; align-items: center; gap: 15px; font-family: monospace; color: #444; }
-        .btn-play-row { background: transparent; border: 1px solid #ccc; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; }
-        .btn-play-row:hover { border-color: var(--clockify-blue); color: var(--clockify-blue); }
+        .btn-play-row { background: transparent; border: 1px solid #ccc; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: 0.2s;}
+        .btn-play-row:hover { border-color: var(--clockify-blue); color: var(--clockify-blue); background: #eef7fc; }
+
+        /* SEKSYEN PANDANGAN (TAB VIEWS) */
+        .tab-view { display: none; }
+        .tab-view.active-view { display: block; }
 
         /* AUTH & MODAL */
         #authContainer { display: block; max-width: 380px; margin: 80px auto; background: #fff; padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); text-align: center; }
@@ -78,7 +89,7 @@
 
     <!-- KOTAK LOG MASUK -->
     <div id="authContainer">
-        <h2 style="color:var(--clockify-blue); margin-top:0;">Clocky Enterprise</h2>
+        <h2 style="color:var(--clockify-blue); margin-top:0;"><i class="fa-solid fa-stopwatch"></i> Clocky Enterprise</h2>
         <input type="email" id="emailInput" placeholder="E-mel">
         <input type="password" id="passwordInput" placeholder="Kata Laluan">
         <button class="btn-full" onclick="login()">Log Masuk</button>
@@ -87,29 +98,25 @@
 
     <!-- MAIN APP CONTAINER -->
     <div id="appContainer">
-        <!-- 1. TOP ICON NAVIGATION -->
+        <!-- 1. TOP ICON NAVIGATION (BERFUNGSI SERTA-MERTA) -->
         <div class="top-icon-bar">
-            <div class="top-icon-item">🌴 Time off</div>
-            <div class="top-icon-item">📅 Scheduling</div>
-            <div class="top-icon-item">📁 Projects</div>
-            <div class="top-icon-item">🎯 Auto tracker</div>
-            <div class="top-icon-item">📆 Calendar</div>
-            <div class="top-icon-item active">⏱️ Timer</div>
-            <div class="top-icon-item">📋 Timesheet</div>
-            <div class="top-icon-item">📊 Reports</div>
-            <div class="top-icon-item">🧾 Invoicing</div>
+            <div class="top-icon-item" onclick="switchTab('timer')"><i class="fa-solid fa-stopwatch"></i><span>Timer</span></div>
+            <div class="top-icon-item" onclick="switchTab('dashboard')"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></div>
+            <div class="top-icon-item" onclick="switchTab('projects')"><i class="fa-solid fa-folder"></i><span>Projects</span></div>
+            <div class="top-icon-item" onclick="switchTab('reports')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Invoicing</span></div>
+            <div class="top-icon-item" onclick="switchTab('team')"><i class="fa-solid fa-users"></i><span>Team</span></div>
         </div>
 
         <!-- 2. APP HEADER -->
         <div class="app-header">
             <div class="logo-area">
-                <span style="color:var(--clockify-blue);">⏱️ clocky</span>
+                <span style="color:var(--clockify-blue);"><i class="fa-solid fa-stopwatch"></i> clocky</span>
                 <span class="workspace-badge">Akaun Pasukan <span id="userRoleBadge" style="font-weight:bold; color:#d97706;">(Admin)</span></span>
             </div>
             <div>
-                <button onclick="generateInvoicePDF()" style="background:#f59e0b; border:none; color:white; padding:6px 12px; border-radius:3px; font-size:12px; cursor:pointer;">Cetak PDF</button>
-                <button onclick="exportToCSV()" style="background:#10b981; border:none; color:white; padding:6px 12px; border-radius:3px; font-size:12px; cursor:pointer;">CSV</button>
-                <button onclick="logout()" style="background:#64748b; border:none; color:white; padding:6px 12px; border-radius:3px; font-size:12px; cursor:pointer; margin-left:5px;">Keluar</button>
+                <button onclick="generateInvoicePDF()" style="background:#f59e0b; border:none; color:white; padding:6px 12px; border-radius:3px; font-size:12px; cursor:pointer;"><i class="fa-solid fa-file-pdf"></i> Cetak PDF</button>
+                <button onclick="exportToCSV()" style="background:#10b981; border:none; color:white; padding:6px 12px; border-radius:3px; font-size:12px; cursor:pointer;"><i class="fa-solid fa-file-csv"></i> CSV</button>
+                <button onclick="logout()" style="background:#64748b; border:none; color:white; padding:6px 12px; border-radius:3px; font-size:12px; cursor:pointer; margin-left:5px;"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button>
             </div>
         </div>
 
@@ -117,53 +124,88 @@
         <div class="main-layout">
             <!-- SIDEBAR LEFT -->
             <div class="sidebar">
-                <div class="sidebar-item active">⏱️ TIME TRACKER</div>
-                <div class="sidebar-item" onclick="alert('Modul Timesheet akan datang!')">📋 TIMESHEET</div>
-                <div class="sidebar-item" onclick="alert('Modul Calendar akan datang!')">📆 CALENDAR</div>
+                <div class="sidebar-item active" data-tab="timer" onclick="switchTab('timer')"><i class="fa-solid fa-stopwatch"></i> TIME TRACKER</div>
+                <div class="sidebar-item" data-tab="dashboard" onclick="switchTab('dashboard')"><i class="fa-solid fa-chart-line"></i> DASHBOARD</div>
                 
                 <div class="sidebar-section">ANALYZE</div>
-                <div class="sidebar-item" onclick="toggleAnalytics()">📊 DASHBOARD</div>
-                <div class="sidebar-item" onclick="generateInvoicePDF()">🧾 REPORTS / PDF</div>
+                <div class="sidebar-item" data-tab="reports" onclick="switchTab('reports')"><i class="fa-solid fa-file-invoice"></i> REPORTS & INVOICE</div>
 
                 <div class="sidebar-section">MANAGE</div>
-                <div class="sidebar-item" onclick="addProject()">📁 PROJECTS (+)</div>
-                <div class="sidebar-item">👥 TEAM</div>
+                <div class="sidebar-item" data-tab="projects" onclick="switchTab('projects')"><i class="fa-solid fa-folder"></i> PROJECTS</div>
+                <div class="sidebar-item" data-tab="team" onclick="switchTab('team')"><i class="fa-solid fa-users"></i> TEAM</div>
             </div>
 
             <!-- CONTENT AREA RIGHT -->
             <div class="content-area">
                 
-                <!-- TRACKER INPUT BAR 1:1 CLOCKIFY -->
-                <div class="tracker-bar">
-                    <input type="text" id="taskDesc" class="tracker-input" placeholder="What are you working on?">
-                    <div class="tracker-controls">
-                        <select id="projectSelect" class="project-select">
-                            <option value="">+ Project</option>
-                        </select>
-                        <div style="display:flex; align-items:center; gap:5px; font-size:12px; color:#777;">
-                            <span>RM/Jam:</span>
-                            <input type="number" id="hourlyRate" value="50" style="width:50px; padding:3px; border:1px solid #ccc; border-radius:3px;" onchange="calculateEarnings()">
+                <!-- VIEW 1: TIME TRACKER (UTAMA) -->
+                <div id="view-timer" class="tab-view active-view">
+                    <!-- TRACKER INPUT BAR 1:1 CLOCKIFY -->
+                    <div class="tracker-bar">
+                        <input type="text" id="taskDesc" class="tracker-input" placeholder="What are you working on?">
+                        <div class="tracker-controls">
+                            <select id="projectSelect" class="project-select">
+                                <option value="">+ Project</option>
+                            </select>
+                            <div style="display:flex; align-items:center; gap:5px; font-size:12px; color:#777;">
+                                <span>RM/Jam:</span>
+                                <input type="number" id="hourlyRate" value="50" style="width:50px; padding:3px; border:1px solid #ccc; border-radius:3px;" onchange="calculateEarnings()">
+                            </div>
+                            <div class="timer-val" id="display">00:00:00</div>
+                            <button class="btn-start-clockify" id="btnStart" onclick="startTimer()">Start</button>
+                            <button class="btn-stop-clockify" id="btnStop" onclick="stopTimer()">Stop</button>
                         </div>
-                        <div class="timer-val" id="display">00:00:00</div>
-                        <button class="btn-start-clockify" id="btnStart" onclick="startTimer()">Start</button>
-                        <button class="btn-stop-clockify" id="btnStop" onclick="stopTimer()">Stop</button>
+                    </div>
+
+                    <!-- WEEK TOTAL HEADER -->
+                    <div class="week-header">
+                        <span>This week</span>
+                        <span>Week total: <strong id="weekTotal" style="color:#222;">00:00:00</strong> | Earnings: <strong id="totalEarnings" style="color:#10b981;">RM 0.00</strong></span>
+                    </div>
+
+                    <!-- GROUPED LIST CONTAINER -->
+                    <div id="historyList">Memuatkan data...</div>
+                </div>
+
+                <!-- VIEW 2: DASHBOARD & CARTA ANALITIK -->
+                <div id="view-dashboard" class="tab-view">
+                    <div style="background:#fff; padding:25px; border:1px solid var(--border-color); border-radius:4px;">
+                        <h3 style="margin-top:0; color:var(--clockify-blue);"><i class="fa-solid fa-chart-pie"></i> Analitik Agihan Masa Projek</h3>
+                        <canvas id="projectChart" style="max-height:260px;"></canvas>
                     </div>
                 </div>
 
-                <!-- ANALYTICS CHART CONTAINER (TOGGLE) -->
-                <div id="analyticsCard" style="display:none; background:#fff; padding:20px; border:1px solid var(--border-color); border-radius:4px; margin-bottom:20px;">
-                    <h4 style="margin-top:0;">Analitik Masa Projek</h4>
-                    <canvas id="projectChart" style="max-height:180px;"></canvas>
+                <!-- VIEW 3: PROJECTS MANAGER -->
+                <div id="view-projects" class="tab-view">
+                    <div style="background:#fff; padding:25px; border:1px solid var(--border-color); border-radius:4px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                            <h3 style="margin:0; color:var(--clockify-blue);"><i class="fa-solid fa-folder-open"></i> Pengurusan Projek</h3>
+                            <button onclick="addProject()" style="background:var(--clockify-blue); color:white; border:none; padding:8px 16px; border-radius:4px; font-weight:bold; cursor:pointer;">+ Cipta Projek Baharu</button>
+                        </div>
+                        <div id="projectListManager">Memuatkan projek...</div>
+                    </div>
                 </div>
 
-                <!-- WEEK TOTAL HEADER -->
-                <div class="week-header">
-                    <span>This week</span>
-                    <span>Week total: <strong id="weekTotal" style="color:#222;">00:00:00</strong> | Earnings: <strong id="totalEarnings" style="color:#10b981;">RM 0.00</strong></span>
+                <!-- VIEW 4: REPORTS & INVOICING -->
+                <div id="view-reports" class="tab-view">
+                    <div style="background:#fff; padding:25px; border:1px solid var(--border-color); border-radius:4px; text-align:center;">
+                        <h3 style="color:var(--clockify-blue);"><i class="fa-solid fa-file-invoice-dollar"></i> Pusat Invois & Laporan PDF</h3>
+                        <p style="color:#666;">Jana invois berjenama secara automatik berdasarkan peratusan jam kerja projek.</p>
+                        <div style="display:flex; justify-content:center; gap:15px; margin-top:20px;">
+                            <button onclick="generateInvoicePDF()" style="background:#f59e0b; color:white; border:none; padding:12px 24px; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-file-pdf"></i> Cetak Invois Rasmi PDF</button>
+                            <button onclick="exportToCSV()" style="background:#10b981; color:white; border:none; padding:12px 24px; border-radius:4px; font-weight:bold; cursor:pointer;"><i class="fa-solid fa-file-csv"></i> Muat Turun Data CSV</button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- GROUPED LIST CONTAINER -->
-                <div id="historyList">Memuatkan data...</div>
+                <!-- VIEW 5: TEAM MANAGER -->
+                <div id="view-team" class="tab-view">
+                    <div style="background:#fff; padding:25px; border:1px solid var(--border-color); border-radius:4px;">
+                        <h3 style="margin-top:0; color:var(--clockify-blue);"><i class="fa-solid fa-users"></i> Papan Pemuka Pasukan</h3>
+                        <p style="color:#666;">Status Akses Akaun Anda: <strong id="teamRoleDisplay" style="color:#d97706;">Admin</strong></p>
+                        <div id="teamMembersList">Memuatkan ahli pasukan...</div>
+                    </div>
+                </div>
 
             </div>
         </div>
@@ -185,10 +227,35 @@
             if(savedRate) document.getElementById('hourlyRate').value = savedRate;
         };
 
+        // --- SISTEM PENGENDALI TAB INTERAKTIF ---
+        function switchTab(tabName) {
+            // Sembunyikan semua pandangan tab
+            document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active-view'));
+            
+            // Nyalakan tab yang dipilih
+            const targetView = document.getElementById(`view-${tabName}`);
+            if (targetView) targetView.classList.add('active-view');
+
+            // Kemas kini status aktif pada sidebar
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                if (item.getAttribute('data-tab') === tabName) item.classList.add('active');
+                else item.classList.remove('active');
+            });
+
+            // Kemas kini status aktif pada top bar
+            document.querySelectorAll('.top-icon-item').forEach(item => {
+                const spanText = item.querySelector('span').innerText.toLowerCase();
+                if (spanText.includes(tabName)) item.classList.add('active');
+                else item.classList.remove('active');
+            });
+        }
+
         async function checkUserRole() {
             const { data } = await supabaseClient.from('profiles').select('role').eq('id', currentUser.id).maybeSingle();
             currentUserRole = (data && data.role) ? data.role : 'member';
-            document.getElementById('userRoleBadge').innerText = currentUserRole === 'admin' ? '(Admin)' : '(Staf)';
+            const roleTxt = currentUserRole === 'admin' ? '(Admin)' : '(Staf)';
+            document.getElementById('userRoleBadge').innerText = roleTxt;
+            document.getElementById('teamRoleDisplay').innerText = currentUserRole === 'admin' ? 'Pengurus (Admin)' : 'Staf (Member)';
         }
 
         async function register() {
@@ -218,21 +285,23 @@
             fetchProjects(); fetchHistory(); loadDashboard();
         }
 
-        function toggleAnalytics() {
-            const el = document.getElementById('analyticsCard');
-            el.style.display = el.style.display === 'none' ? 'block' : 'none';
-        }
-
         async function fetchProjects() {
             const { data } = await supabaseClient.from('projects').select('*').order('created_at', { ascending: false });
             if (!data) return;
             const select = document.getElementById('projectSelect');
             select.innerHTML = '<option value="">+ Project</option>';
-            data.forEach(p => select.innerHTML += `<option value="${p.id}">${p.name}</option>`);
+            
+            let managerHtml = '<ul style="padding-left:20px; color:#333;">';
+            data.forEach(p => {
+                select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+                managerHtml += `<li style="margin-bottom:8px; font-weight:500;">${p.name}</li>`;
+            });
+            managerHtml += '</ul>';
+            document.getElementById('projectListManager').innerHTML = managerHtml;
         }
 
         async function addProject() {
-            const projectName = prompt("Nama projek baharu:");
+            const projectName = prompt("Sila masukkan nama projek baharu:");
             if (!projectName) return;
             const { error } = await supabaseClient.from('projects').insert([{ name: projectName }]);
             if (!error) fetchProjects();
@@ -262,6 +331,7 @@
         }
 
         function restartTask(desc, projectId) {
+            switchTab('timer');
             document.getElementById('taskDesc').value = desc;
             if(projectId && projectId !== 'null') document.getElementById('projectSelect').value = projectId;
             startTimer();
@@ -336,7 +406,7 @@
                             <div class="row-right">
                                 <span style="font-size:11px; color:#888;">${sTimeFormat} - ${eTimeFormat}</span>
                                 <span style="font-weight:bold;">${fTime}</span>
-                                <button class="btn-play-row" onclick="restartTask('${entry.description.replace(/'/g, "\\'")}', '${entry.project_id}')" title="Play">▶</button>
+                                <button class="btn-play-row" onclick="restartTask('${entry.description.replace(/'/g, "\\'")}', '${entry.project_id}')" title="Play"><i class="fa-solid fa-play"></i></button>
                             </div>
                         </div>`;
                 });
